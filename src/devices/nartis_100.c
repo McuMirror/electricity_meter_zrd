@@ -660,7 +660,7 @@ static uint8_t send_cmd_open_session() {
     info_field_data[info_field_len++] = 0x80;
     aarq_len++;
     auth_len++;
-    info_field_data[info_field_len++] = 0x03;
+    info_field_data[info_field_len++] = meter.password.size; //0x03;
     aarq_len++;
     auth_len++;
     memcpy(&info_field_data[info_field_len], meter.password.data, meter.password.size);
@@ -1242,8 +1242,13 @@ uint8_t measure_meter_nartis_100() {
     uint8_t ret;
 
     ret = measure_meter_nartis_100_1();
-    ret = measure_meter_nartis_100_2();
-    ret = measure_meter_nartis_100_3();
+
+    if (ret) {
+        ret = measure_meter_nartis_100_2();
+        if (ret) {
+            ret = measure_meter_nartis_100_3();
+        }
+    }
 
     return ret;
 }
