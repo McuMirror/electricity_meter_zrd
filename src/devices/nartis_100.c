@@ -660,7 +660,7 @@ static uint8_t send_cmd_open_session() {
     info_field_data[info_field_len++] = 0x80;
     aarq_len++;
     auth_len++;
-    info_field_data[info_field_len++] = 0x03;
+    info_field_data[info_field_len++] = meter.password.size; //0x03;
     aarq_len++;
     auth_len++;
     memcpy(&info_field_data[info_field_len], meter.password.data, meter.password.size);
@@ -1019,11 +1019,11 @@ static uint32_t get_tariffA(request_t *attr_desc) {
     uint32_t tariff = 0;
     type_digit_t *tariff_A = (type_digit_t*)get_request_data(attr_desc);
 
-    if (tariff_A->type == TYPE_UNSIGNED_32) {
-        tariff = reverse32(tariff_A->value);
+    if (tariff_A) {
+        if (tariff_A->type == TYPE_UNSIGNED_32) {
+            tariff = reverse32(tariff_A->value);
+        }
     }
-
-//    sleep_ms(300);
 
     return tariff;
 }
@@ -1242,8 +1242,13 @@ uint8_t measure_meter_nartis_100() {
     uint8_t ret;
 
     ret = measure_meter_nartis_100_1();
-    ret = measure_meter_nartis_100_2();
-    ret = measure_meter_nartis_100_3();
+
+    if (ret) {
+        ret = measure_meter_nartis_100_2();
+        if (ret) {
+            ret = measure_meter_nartis_100_3();
+        }
+    }
 
     return ret;
 }
