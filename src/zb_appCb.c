@@ -124,11 +124,12 @@ void zb_bdbInitCb(uint8_t status, uint8_t joinedNetwork){
 			heartInterval = 1000;
 
 			device_online = true;
+            g_appCtx.net_steer_start = false;
 
 #ifdef ZCL_OTA
 			ota_queryStart(OTA_PERIODIC_QUERY_INTERVAL);
 #endif
-		}else{
+		} else if (g_appCtx.net_steer_start) {
 			heartInterval = 500;
 
             device_online = false;
@@ -174,6 +175,7 @@ void zb_bdbCommissioningCb(uint8_t status, void *arg){
 			light_blink_start(2, 200, 200);
 
             device_online = true;
+            g_appCtx.net_steer_start = false;
 
 #ifdef ZCL_OTA
 	    	ota_queryStart(OTA_PERIODIC_QUERY_INTERVAL);
@@ -193,13 +195,15 @@ void zb_bdbCommissioningCb(uint8_t status, void *arg){
 		case BDB_COMMISSION_STA_NO_NETWORK:
 		case BDB_COMMISSION_STA_TCLK_EX_FAILURE:
 		case BDB_COMMISSION_STA_TARGET_FAILURE:
-			{
-				uint16_t jitter = 0;
-	            device_online = false;
-				do{
-					jitter = zb_random() % 0x2710;
-				}while(jitter < 5000);
-				TL_ZB_TIMER_SCHEDULE(app_bdbNetworkSteerStart, NULL, jitter);
+            {
+                if (g_appCtx.net_steer_start) {
+                    uint16_t jitter = 0;
+                    device_online = false;
+                    do{
+                        jitter = zb_random() % 0x2710;
+                    } while(jitter < 5000);
+                    TL_ZB_TIMER_SCHEDULE(app_bdbNetworkSteerStart, NULL, jitter);
+                }
 			}
 			break;
 		case BDB_COMMISSION_STA_FORMATION_FAILURE:
