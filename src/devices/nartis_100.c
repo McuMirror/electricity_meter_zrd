@@ -1019,11 +1019,11 @@ static uint32_t get_tariffA(request_t *attr_desc) {
     uint32_t tariff = 0;
     type_digit_t *tariff_A = (type_digit_t*)get_request_data(attr_desc);
 
-    if (tariff_A->type == TYPE_UNSIGNED_32) {
-        tariff = reverse32(tariff_A->value);
+    if (tariff_A) {
+        if (tariff_A->type == TYPE_UNSIGNED_32) {
+            tariff = reverse32(tariff_A->value);
+        }
     }
-
-//    sleep_ms(300);
 
     return tariff;
 }
