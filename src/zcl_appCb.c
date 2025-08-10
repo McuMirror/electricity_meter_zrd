@@ -291,54 +291,7 @@ static void app_zclDfltRspCmd(zclDefaultRspCmd_t *pDftRspCmd)
 static void app_zclCfgReportCmd(uint8_t endPoint, uint16_t clusterId, zclCfgReportCmd_t *pCfgReportCmd)
 {
     //printf("app_zclCfgReportCmd\r\n");
-    for(uint8_t i = 0; i < pCfgReportCmd->numAttr; i++) {
-        for (uint8_t ii = 0; ii < ZCL_REPORTING_TABLE_NUM; ii++) {
-            if (app_reporting[ii].pEntry->used) {
-                if (app_reporting[ii].pEntry->endPoint == endPoint &&
-                    app_reporting[ii].pEntry->clusterID == clusterId &&
-                    app_reporting[ii].pEntry->attrID == pCfgReportCmd->attrList[i].attrID) {
-                    if (pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_MULTIPLIER ||
-                        pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_DIVISOR ||
-                        pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_AC_VOLTAGE_MULTIPLIER ||
-                        pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_AC_VOLTAGE_DIVISOR ||
-                        pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_AC_CURRENT_MULTIPLIER ||
-                        pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_AC_CURRENT_DIVISOR ||
-                        pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_AC_POWER_MULTIPLIER ||
-                        pCfgReportCmd->attrList[i].attrID == ZCL_ATTRID_AC_POWER_DIVISOR) {
-#if UART_PRINTF_MODE && DEBUG_REPORTING
-                        printf("The report in cluster 0x%x of attribute 0x%x cannot be changed\r\n",
-                                clusterId, pCfgReportCmd->attrList[i].attrID);
-#endif
-                        app_reporting[ii].pEntry->maxInterval = 0;
-                        app_reporting[ii].pEntry->minInterval = 0;
-                        memset(app_reporting[ii].pEntry->reportableChange, 0, sizeof(app_reporting[ii].pEntry->reportableChange));
-                    } else {
-#if UART_PRINTF_MODE && DEBUG_REPORTING
-                    printf("reportCfg: idx: %d, endPoint: 0x%x, clusterId: 0x%x, attrId: 0x%x\r\n",
-                            ii, endPoint, clusterId, pCfgReportCmd->attrList[i].attrID);
-                    printf("New minInterval: %d, new maxInterval: %d, new reportableChange: 0x",
-                            app_reporting[ii].pEntry->minInterval, app_reporting[ii].pEntry->maxInterval);
-                    for (uint8_t i = 0; i < REPORTABLE_CHANGE_MAX_ANALOG_SIZE; i++) {
-                        if (app_reporting[ii].pEntry->reportableChange[i] < 0x10) {
-                            printf("0%x", app_reporting[ii].pEntry->reportableChange[i]);
-                        } else {
-                            printf("%x", app_reporting[ii].pEntry->reportableChange[i]);
-                        }
-                    }
-                    printf("\r\n");
-#endif
-                    }
-                    if (app_reporting[ii].timerReportMinEvt) {
-                        TL_ZB_TIMER_CANCEL(&app_reporting[ii].timerReportMinEvt);
-                    }
-                    if (app_reporting[ii].timerReportMaxEvt) {
-                        TL_ZB_TIMER_CANCEL(&app_reporting[ii].timerReportMaxEvt);
-                    }
-                    return;
-                }
-            }
-        }
-    }
+    reportAttrTimerStop();
 }
 
 /*********************************************************************

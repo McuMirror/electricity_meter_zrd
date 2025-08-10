@@ -3,7 +3,6 @@
 #include "zcl_include.h"
 
 #include "device.h"
-#include "se_custom_attr.h"
 #include "app_main.h"
 #include "app_uart.h"
 

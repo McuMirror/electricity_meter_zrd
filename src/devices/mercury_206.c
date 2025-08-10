@@ -5,7 +5,7 @@
 #include "device.h"
 #include "mercury_206.h"
 #include "app_uart.h"
-#include "se_custom_attr.h"
+#include "zcl_custom_attr.h"
 #include "app_endpoint_cfg.h"
 
 static package_t request_pkt;

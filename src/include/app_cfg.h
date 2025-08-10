@@ -215,11 +215,7 @@ extern "C" {
 #define ZCL_LEVEL_CTRL_SUPPORT                      OFF
 #define ZCL_GROUP_SUPPORT                           OFF
 #define ZCL_SCENE_SUPPORT                           OFF
-#if (CHIP_FLASH_SIZE == 1024)
 #define ZCL_OTA_SUPPORT                             ON
-#else
-#define ZCL_OTA_SUPPORT                             OFF
-#endif
 #define ZCL_GP_SUPPORT                              ON
 #define ZCL_WWAH_SUPPORT                            OFF
 #if TOUCHLINK_SUPPORT
@@ -230,11 +226,6 @@ extern "C" {
 #define ZCL_ELECTRICAL_MEASUREMENT_SUPPORT          ON
 #define ZCL_DEV_TEMPERATURE_CFG_SUPPORT             ON
 
-#if (CHIP_FLASH_SIZE == 512)
-#if (ZCL_OTA_SUPPORT == ON)
-#error ZCL_OTA_SUPPORT must be disable in "app_cfg.h"
-#endif
-#endif
 
 /**********************************************************************
  * Stack configuration

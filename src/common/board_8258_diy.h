@@ -6,12 +6,27 @@ extern "C" {
 #endif
 
 /************************* Configure KEY GPIO ***************************************/
-#define BUTTON                  GPIO_PB6
+#define MAX_BUTTON_NUM  1
+
+#define BUTTON1                 GPIO_PB6
 #define PB6_INPUT_ENABLE        ON
 #define PB6_DATA_OUT            OFF
 #define PB6_OUTPUT_ENABLE       OFF
 #define PB6_FUNC                AS_GPIO
-#define PULL_WAKEUP_SRC_PB6     PM_PIN_PULLUP_1M
+#define PULL_WAKEUP_SRC_PB6     PM_PIN_PULLUP_10K //PM_PIN_PULLUP_1M
+
+enum {
+    VK_SW1 = 0x01,
+};
+
+#define KB_MAP_NORMAL   {\
+        {VK_SW1,}}
+
+#define KB_MAP_NUM      KB_MAP_NORMAL
+#define KB_MAP_FN       KB_MAP_NORMAL
+
+#define KB_DRIVE_PINS  {NULL }
+#define KB_SCAN_PINS   {BUTTON1}
 
 /************************* Configure TAMPER GPIO ***************************************/
 #define TAMPER                  GPIO_PC4

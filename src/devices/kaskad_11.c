@@ -5,7 +5,7 @@
 #include "kaskad_11.h"
 #include "app_dev_config.h"
 #include "app_uart.h"
-#include "se_custom_attr.h"
+#include "zcl_custom_attr.h"
 #include "app_main.h"
 
 #define LEVEL_READ 0x02

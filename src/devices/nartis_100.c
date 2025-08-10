@@ -1,7 +1,7 @@
 #include "tl_common.h"
 #include "zcl_include.h"
 
-#include "se_custom_attr.h"
+#include "zcl_custom_attr.h"
 #include "app_uart.h"
 #include "app_endpoint_cfg.h"
 #include "app_dev_config.h"
