@@ -9,10 +9,12 @@
 #include "app_reporting.h"
 #include "nartis_100.h"
 
-#define PASSWORD        "111"
-//#define PASSWORD        "12345678"
+#define PASSWORD_100    "111"           // for Nartis-100
+#define PASSWORD_I100   "00000001"      // for Nartis-I100
+//#define PASSWORD      "12345678"
 #define CLIENT_ADDRESS  0x20
-#define PHY_DEVICE      0x10
+#define PHY_DEVICE_100  0x10
+#define PHY_DEVICE_I100 0x11        // for Nartis-I300
 #define LOGICAL_DEVICE  0x01
 #define FLAG            0x7E
 #define TYPE3           0x0A
@@ -35,7 +37,9 @@
 enum {
     TYPE_SIGNED_32    = 0x05,
     TYPE_UNSIGNED_32  = 0x06,
-    TYPE_OCTET_STRING = 0x09
+    TYPE_OCTET_STRING = 0x09,
+    TYPE_UNSIGNED_16  = 0x12,
+    TYPE_UNSIGNED_64  = 0x15,
 };
 
 static meter_t meter;
@@ -557,6 +561,38 @@ static uint8_t send_cmd_snrm() {
     return false;
 }
 
+static uint8_t send_cmd_run_connect() {
+
+#if UART_PRINTF_MODE && (DEBUG_DEVICE_DATA || DEBUG_PACKAGE)
+    printf("\r\nCommand running of connect\r\n");
+#endif
+
+    uint8_t *pkt_buff = (uint8_t*)&raw_package;
+
+    memset(pkt_buff, 0, sizeof(package_t));
+    memset(&result_package, 0, sizeof(result_package_t));
+
+    set_header();
+    raw_package.header.control = SNRM;
+    meter.format.length += 3;                       /* + size command + size FCS   */
+
+    uint8_t *format = (uint8_t*)&(meter.format);
+
+    raw_package.header.format[0] = format[1];
+    raw_package.header.format[1] = format[0];
+
+    uint16_t crc = checksum(pkt_buff+1, meter.format.length-2);
+    raw_package.data[0] = crc & 0xff;
+    raw_package.data[1] = (crc >> 8) & 0xff;
+    raw_package.data[2] = FLAG;
+
+    if (send_command(pkt_buff, meter.format.length+2)) {
+        return response_meter();
+    }
+
+    return false;
+}
+
 static void send_cmd_disc() {
 
 #if UART_PRINTF_MODE && (DEBUG_DEVICE_DATA || DEBUG_PACKAGE)
@@ -917,21 +953,29 @@ static void get_voltage_data() {
 #endif
 
     uint32_t voltage = 0;
+    uint16_t volts = 0;
+
     type_digit_t *digit_voltage = (type_digit_t*)get_request_data(&attr_descriptor_voltage);
 
     if (digit_voltage) {
 
-        if (digit_voltage->type == TYPE_UNSIGNED_32) {
+        if (digit_voltage->type == TYPE_UNSIGNED_16) {
+            voltage = reverse16(digit_voltage->value);
+        } else if (digit_voltage->type == TYPE_UNSIGNED_32) {
             voltage = reverse32(digit_voltage->value);
+        }
 
-            uint16_t volts = voltage / 10;
+        if (dev_config.device_model == DEVICE_NARTIS_100) {
+            volts = voltage / 10;
+        } else {
+            volts = voltage * 10;
+        }
 
-            zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT, ZCL_ATTRID_RMS_VOLTAGE, (uint8_t*)&volts);
+        zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT, ZCL_ATTRID_RMS_VOLTAGE, (uint8_t*)&volts);
 
 #if UART_PRINTF_MODE && DEBUG_DEVICE_DATA
-            printf("voltage: %d\r\n", volts);
+        printf("voltage: %d\r\n", volts);
 #endif
-        }
     }
 }
 
@@ -946,9 +990,12 @@ static void get_power_data() {
 
     if (digit_power) {
 
-        if (digit_power->type == TYPE_UNSIGNED_32) {
+        if (digit_power->type == TYPE_UNSIGNED_32 || digit_power->type == TYPE_SIGNED_32) {
 
-            power = reverse32(digit_power->value) / 1000;
+            power = reverse32(digit_power->value);
+
+            if (dev_config.device_model == DEVICE_NARTIS_100)
+                power /= 1000;
 
             //power = 42258; //1505010; //
             //power /= 1000;
@@ -970,19 +1017,21 @@ static void get_current_data() {
     printf("\r\nCommand get current\r\n");
 #endif
 
-    uint16_t current = 0;
+    uint32_t current = 0;
     type_digit_t *digit_current = (type_digit_t*)get_request_data(&attr_descriptor_current);
 
     if (digit_current) {
 
         if (digit_current->type == TYPE_SIGNED_32 || digit_current->type == TYPE_UNSIGNED_32) {
 
-            current = reverse32(digit_current->value) & 0xffff;
+            current = reverse32(digit_current->value);
 
-            zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT, ZCL_ATTRID_RMS_CURRENT, (uint8_t*)&current);
+            uint16_t ampers = current & 0xffff;
+
+            zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT, ZCL_ATTRID_RMS_CURRENT, (uint8_t*)&ampers);
 
 #if UART_PRINTF_MODE && DEBUG_DEVICE_DATA
-            printf("current: %d\r\n", current);
+            printf("current: %d\r\n", ampers);
 #endif
         }
     }
@@ -1040,9 +1089,11 @@ static void get_tariffs_1_2_data() {
     tariff_summ = 0;
 
     tariffP = get_tariffA(&attr_descriptor_tariff1AP);
-    tariffM = get_tariffA(&attr_descriptor_tariff1AM);
 
-    tariff = (tariffP + tariffM) & 0xffffffffffff;
+    if (dev_config.device_model == DEVICE_NARTIS_100) {
+        tariffM = get_tariffA(&attr_descriptor_tariff1AM);
+        tariff = (tariffP + tariffM) & 0xffffffffffff;
+    } else tariff = tariffP & 0xffffffffffff;
 
     tariff_summ += tariff;
 
@@ -1053,9 +1104,11 @@ static void get_tariffs_1_2_data() {
 #endif
 
     tariffP = get_tariffA(&attr_descriptor_tariff2AP);
-    tariffM = get_tariffA(&attr_descriptor_tariff2AM);
 
-    tariff = (tariffP + tariffM) & 0xffffffffffff;
+    if (dev_config.device_model == DEVICE_NARTIS_100) {
+        tariffM = get_tariffA(&attr_descriptor_tariff2AM);
+        tariff = (tariffP + tariffM) & 0xffffffffffff;
+    } else tariff = tariffP & 0xffffffffffff;
 
     tariff_summ += tariff;
 
@@ -1077,9 +1130,11 @@ static void get_tariffs_3_4_data() {
 #endif
 
     tariffP = get_tariffA(&attr_descriptor_tariff3AP);
-    tariffM = get_tariffA(&attr_descriptor_tariff3AM);
 
-    tariff = (tariffP + tariffM) & 0xffffffffffff;
+    if (dev_config.device_model == DEVICE_NARTIS_100) {
+        tariffM = get_tariffA(&attr_descriptor_tariff3AM);
+        tariff = (tariffP + tariffM) & 0xffffffffffff;
+    } else tariff = tariffP & 0xffffffffffff;
 
     tariff_summ += tariff;
 
@@ -1090,9 +1145,11 @@ static void get_tariffs_3_4_data() {
 #endif
 
     tariffP = get_tariffA(&attr_descriptor_tariff4AP);
-    tariffM = get_tariffA(&attr_descriptor_tariff4AM);
 
-    tariff = (tariffP + tariffM) & 0xffffffffffff;
+    if (dev_config.device_model == DEVICE_NARTIS_100) {
+        tariffM = get_tariffA(&attr_descriptor_tariff4AM);
+        tariff = (tariffP + tariffM) & 0xffffffffffff;
+    } else tariff = tariffP & 0xffffffffffff;
 
     tariff_summ += tariff;
 
@@ -1134,12 +1191,12 @@ static void get_resbat_data() {
 
 }
 
-void nartis100_init() {
+void nartis_100_init() {
     memset(&meter, 0, sizeof(meter_t));
 
     meter.client_addr = CLIENT_ADDRESS;
     meter.server_upper_addr = LOGICAL_DEVICE;
-    meter.server_lower_addr = PHY_DEVICE;
+    meter.server_lower_addr = PHY_DEVICE_100;
     meter.max_info_field_rx = MAX_INFO_FIELD;
     meter.max_info_field_tx = MAX_INFO_FIELD;
     meter.window_rx = 1;
@@ -1148,8 +1205,29 @@ void nartis100_init() {
     if (dev_config.device_password.size) {
         memcpy(&meter.password, &dev_config.device_password, sizeof(m_password_t));
     } else {
-        strcpy((char*)meter.password.data, PASSWORD);
-        meter.password.size = sizeof(PASSWORD)-1;
+        strcpy((char*)meter.password.data, PASSWORD_100);
+        meter.password.size = sizeof(PASSWORD_100)-1;
+    }
+    //printf("size: %d, meter password: %s\r\n", meter.password.size, meter.password.data);
+//    memcpy(&meter.password, PASSWORD, sizeof(PASSWORD));
+}
+
+void nartis_i100_init() {
+    memset(&meter, 0, sizeof(meter_t));
+
+    meter.client_addr = CLIENT_ADDRESS;
+    meter.server_upper_addr = LOGICAL_DEVICE;
+    meter.server_lower_addr = PHY_DEVICE_I100;
+    meter.max_info_field_rx = MAX_INFO_FIELD;
+    meter.max_info_field_tx = MAX_INFO_FIELD;
+    meter.window_rx = 1;
+    meter.window_tx = 1;
+    meter.format.type = TYPE3;
+    if (dev_config.device_password.size) {
+        memcpy(&meter.password, &dev_config.device_password, sizeof(m_password_t));
+    } else {
+        strcpy((char*)meter.password.data, PASSWORD_I100);
+        meter.password.size = sizeof(PASSWORD_I100)-1;
     }
     //printf("size: %d, meter password: %s\r\n", meter.password.size, meter.password.data);
 //    memcpy(&meter.password, PASSWORD, sizeof(PASSWORD));
@@ -1237,6 +1315,89 @@ static uint8_t measure_meter_nartis_100_3() {
     return ret;
 }
 
+static uint8_t measure_meter_nartis_i100_1() {
+
+    send_cmd_run_connect();                    /* start connection                             */
+
+    uint8_t ret = send_cmd_open_session();
+
+    if (ret) {
+        if (new_start) {                /* after reset                                  */
+            serial_number[0] = 0;
+            date_release[0] = 0;
+            new_start = false;
+        }
+        if (serial_number[0] == 0) {
+            get_serial_number_data();
+        }
+        if (date_release[0] == 0) {
+            get_date_release_data();
+            app_forcedReport(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_CUSTOM_DATE_RELEASE);
+        }
+
+        get_voltage_data();
+        get_power_data();
+        get_current_data();
+        get_time_data();
+
+        get_resbat_data();              /* get resource battery                         */
+        send_cmd_disc();                /* disconnect                                   */
+
+        fault_measure_flag = false;
+    } else {
+        fault_measure_flag = true;
+        if (!timerFaultMeasurementEvt) {
+            timerFaultMeasurementEvt = TL_ZB_TIMER_SCHEDULE(fault_measure_meterCb, NULL, TIMEOUT_10MIN);
+        }
+    }
+
+    return ret;
+}
+
+static uint8_t measure_meter_nartis_i100_2() {
+
+    send_cmd_run_connect();                    /* start connection                             */
+
+    uint8_t ret = send_cmd_open_session();
+
+    if (ret) {
+
+        get_tariffs_1_2_data();
+        send_cmd_disc();                /* disconnect                                   */
+
+        fault_measure_flag = false;
+    } else {
+        fault_measure_flag = true;
+        if (!timerFaultMeasurementEvt) {
+            timerFaultMeasurementEvt = TL_ZB_TIMER_SCHEDULE(fault_measure_meterCb, NULL, TIMEOUT_10MIN);
+        }
+    }
+
+    return ret;
+}
+
+static uint8_t measure_meter_nartis_i100_3() {
+
+    send_cmd_run_connect();                    /* start connection                             */
+
+    uint8_t ret = send_cmd_open_session();
+
+    if (ret) {
+
+        get_tariffs_3_4_data();
+        send_cmd_disc();                /* disconnect                                   */
+
+        fault_measure_flag = false;
+    } else {
+        fault_measure_flag = true;
+        if (!timerFaultMeasurementEvt) {
+            timerFaultMeasurementEvt = TL_ZB_TIMER_SCHEDULE(fault_measure_meterCb, NULL, TIMEOUT_10MIN);
+        }
+    }
+
+    return ret;
+}
+
 uint8_t measure_meter_nartis_100() {
 
     uint8_t ret;
@@ -1247,6 +1408,22 @@ uint8_t measure_meter_nartis_100() {
         ret = measure_meter_nartis_100_2();
         if (ret) {
             ret = measure_meter_nartis_100_3();
+        }
+    }
+
+    return ret;
+}
+
+uint8_t measure_meter_nartis_i100() {
+
+    uint8_t ret;
+
+    ret = measure_meter_nartis_i100_1();
+
+    if (ret) {
+        ret = measure_meter_nartis_i100_2();
+        if (ret) {
+            ret = measure_meter_nartis_i100_3();
         }
     }
 

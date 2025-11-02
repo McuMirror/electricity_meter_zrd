@@ -3,12 +3,11 @@
 
 #include "app_main.h"
 
-bool factory_reset = false;
-
 static int32_t net_steer_start_offCb(void *args) {
 
     g_appCtx.net_steer_start = false;
-    factory_reset = false;
+
+    light_blink_stop();
 
     return -1;
 }
@@ -32,26 +31,13 @@ static void buttonKeepPressed(uint8_t btNum) {
         printf("The button was keep pressed for 5 seconds\r\n");
 #endif
 
-        if (zb_getLocalShortAddr() >= 0xFFF8) {
-//            printf("1 Factory new: %s\r\n", zb_isDeviceFactoryNew()?"yes":"no");
-            if (!factory_reset) {
-                factory_reset = true;
-                zb_resetDevice2FN();
-//                printf("1.2 Factory new: %s\r\n", zb_isDeviceFactoryNew()?"yes":"no");
-            }
-        } else {
-            zb_resetDevice2FN();
-            sleep_ms(200);
-            if (g_appCtx.timerFactoryReset) {
-                TL_ZB_TIMER_CANCEL(&g_appCtx.timerFactoryReset);
-            }
-            g_appCtx.timerFactoryReset = TL_ZB_TIMER_SCHEDULE(delayedFactoryResetCb, NULL, TIMEOUT_5SEC);
-//            printf("2 Factory new: %s\r\n", zb_isDeviceFactoryNew()?"yes":"no");
-        }
+
+        zb_factoryReset();
 
         g_appCtx.net_steer_start = true;
         TL_ZB_TIMER_SCHEDULE(net_steer_start_offCb, NULL, TIMEOUT_1MIN30SEC);
         light_blink_start(90, 100, 1000);
+
     }
 }
 

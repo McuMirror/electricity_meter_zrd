@@ -194,7 +194,10 @@ static void app_zclWriteReqCmd(uint16_t clusterId, zclWriteCmd_t *pWriteReqCmd)
                 memcpy(dev_config.device_password.data, attr[i].attrData+1, attr[i].attrData[0]);
                 switch (dev_config.device_model) {
                     case DEVICE_NARTIS_100:
-                        nartis100_init();
+                        nartis_100_init();
+                        break;
+                    case DEVICE_NARTIS_I100:
+                        nartis_i100_init();
                         break;
                     case DEVICE_KASKAD_1_MT:
                         if (dev_config.device_password.size > 8) {

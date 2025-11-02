@@ -30,7 +30,7 @@ MAKE_INCLUDES := ./make
 TOOLS_PATH := ./tools
 BOOT_FILE := $(OUT_PATH)/bootloader.bin
 VERSION_RELEASE := V$(shell awk -F " " '/APP_RELEASE/ {gsub("0x",""); printf "%.1f", $$3/10.0; exit}' $(SRC_PATH)/include/version_cfg.h)
-VERSION_BUILD := $(shell awk -F " " '/APP_BUILD/ {gsub("0x",""); printf "%02d", $$3; exit}' ./src/include/version_cfg.h)
+VERSION_BUILD := $(shell awk -F " " '/APP_BUILD/ {gsub("0x",""); printf "%02d", $$3; exit}' $(SRC_PATH)/include/version_cfg.h)
 ZCL_VERSION_FILE := $(shell git log -1 --format=%cd --date=format:%Y%m%d -- src |  sed -e "'s/./\'&\',/g'" -e "'s/.$$//'")
 BOOT_SIZE := $(shell ls -l $(BOOT_FILE) | awk '{print $$5}')
 
@@ -186,6 +186,7 @@ $(BIN_FILE): $(ELF_FILE)
 	@echo ' '
 	@echo 'Finished building: $@'
 	@echo ' '
+	@echo VERSION_BUILD $(VERSION_BUILD)
 
 $(OBJ_DIR)/bin_updater.o: $(OBJ_DIR)
     @objcopy -I binary --output-target elf32-littlearm --rename-section .data=.bin_files ./updater.bin $@	 
