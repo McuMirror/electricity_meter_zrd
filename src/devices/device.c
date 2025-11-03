@@ -152,6 +152,7 @@ uint8_t set_device_model(device_model_t model) {
             break;
         }
         default:
+            model = DEVICE_UNDEFINED;
             if (set_zcl_str(device_model[DEVICE_UNDEFINED], name, DEVICE_NAME_LEN)) {
                 zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_CUSTOM_DEVICE_MODEL, (uint8_t*)&name);
             }
