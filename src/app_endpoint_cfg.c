@@ -209,10 +209,10 @@ const zclAttrInfo_t se_attrTbl[] = {
     {ZCL_ATTRID_METERING_DEVICE_TYPE,               ZCL_BITMAP8,    R,  (uint8_t*)&g_zcl_seAttrs.device_type            },
     {ZCL_ATTRID_CUSTOM_DEVICE_MANUFACTURER,         ZCL_ENUM8,      RW, (uint8_t*)&g_zcl_seAttrs.device_model           },
     {ZCL_ATTRID_CUSTOM_DEVICE_ADDRESS,              ZCL_UINT32,     RW, (uint8_t*)&g_zcl_seAttrs.device_address         },
-    {ZCL_ATTRID_CUSTOM_DEVICE_PASSWORD,             ZCL_OCTET_STR,  RW, (uint8_t*)&g_zcl_seAttrs.device_password        },
     {ZCL_ATTRID_CUSTOM_MEASUREMENT_PERIOD,          ZCL_UINT8,      RW, (uint8_t*)&g_zcl_seAttrs.measurement_period     },
     {ZCL_ATTRID_CUSTOM_DATE_RELEASE,                ZCL_OCTET_STR,  RR, (uint8_t*)&g_zcl_seAttrs.date_release           },
     {ZCL_ATTRID_CUSTOM_DEVICE_MODEL,                ZCL_OCTET_STR,  RR, (uint8_t*)&g_zcl_seAttrs.device_name            },
+    {ZCL_ATTRID_CUSTOM_DEVICE_PASSWORD,             ZCL_OCTET_STR,  RW, (uint8_t*)&g_zcl_seAttrs.device_password        },
 
     { ZCL_ATTRID_GLOBAL_CLUSTER_REVISION,           ZCL_UINT16,     R,  (uint8_t*)&zcl_attr_global_clusterRevision      },
 };
