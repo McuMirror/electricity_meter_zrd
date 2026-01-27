@@ -1243,7 +1243,6 @@ static uint8_t measure_meter_nartis_100_1() {
         if (new_start) {                /* after reset                                  */
             serial_number[0] = 0;
             date_release[0] = 0;
-            new_start = false;
         }
         if (serial_number[0] == 0) {
             get_serial_number_data();
@@ -1261,6 +1260,11 @@ static uint8_t measure_meter_nartis_100_1() {
         send_cmd_disc();                /* disconnect                                   */
 
         fault_measure_flag = false;
+
+        if (new_start) {
+            new_start = false;
+            forcedReportCb(NULL);
+        }
     } else {
         fault_measure_flag = true;
         if (!timerFaultMeasurementEvt) {
@@ -1325,7 +1329,6 @@ static uint8_t measure_meter_nartis_i100_1() {
         if (new_start) {                /* after reset                                  */
             serial_number[0] = 0;
             date_release[0] = 0;
-            new_start = false;
         }
         if (serial_number[0] == 0) {
             get_serial_number_data();
@@ -1344,6 +1347,11 @@ static uint8_t measure_meter_nartis_i100_1() {
         send_cmd_disc();                /* disconnect                                   */
 
         fault_measure_flag = false;
+
+        if (new_start) {
+            new_start = false;
+            forcedReportCb(NULL);
+        }
     } else {
         fault_measure_flag = true;
         if (!timerFaultMeasurementEvt) {

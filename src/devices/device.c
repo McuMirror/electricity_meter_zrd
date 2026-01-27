@@ -42,6 +42,7 @@ uint8_t set_device_model(device_model_t model) {
     uint16_t power = 0; //xffff;
     uint16_t volts = 0; //xffff;
     uint16_t current = 0; //xffff;
+    uint8_t battery = 0;
     uint8_t sn[] = "11111111";
     uint8_t serial_number[SE_ATTR_SN_SIZE] = {0};
     uint8_t dr[] = "xx.xx.xxxx";
@@ -183,6 +184,7 @@ uint8_t set_device_model(device_model_t model) {
         zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_CUSTOM_DATE_RELEASE, (uint8_t*)&date_release);
     }
 
+    zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_REMAINING_BATTERY_LIFE, (uint8_t*)&battery);
     zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_MULTIPLIER, (uint8_t*)&energy_multiplier);
     zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_DIVISOR, (uint8_t*)&energy_divisor);
     zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT, ZCL_ATTRID_AC_VOLTAGE_MULTIPLIER, (uint8_t*)&voltage_multiplier);

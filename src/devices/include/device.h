@@ -2,6 +2,7 @@
 #define SRC_INCLUDE_DEVICE_H_
 
 #include "app_utility.h"
+#include "app_reporting.h"
 
 #define PKT_BUFF_MAX_LEN    128         /* max len read from uart   */
 #define DATA_MAX_LEN        30          /* do not change!           */

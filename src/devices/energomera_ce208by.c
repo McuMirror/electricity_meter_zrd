@@ -522,7 +522,6 @@ uint8_t measure_meter_energomera_ce208by() {
     uint8_t ret = open_session();
 
     if (ret) {
-        if (new_start) new_start = false;
 
         if (date_release[0] == 0) {
             get_date_release_data();
@@ -535,6 +534,11 @@ uint8_t measure_meter_energomera_ce208by() {
         get_voltage_data();
 
         fault_measure_flag = false;
+
+        if (new_start) {
+            new_start = false;
+            forcedReportCb(NULL);
+        }
     } else {
         fault_measure_flag = true;
         if (!timerFaultMeasurementEvt) {
