@@ -2,17 +2,21 @@
 
 int32_t flashLedStatusCb(void *arg) {
     if (zb_isDeviceJoinedNwk() && device_online) {
-        light_blink_stop();
-        if (fault_measure_flag || dev_config.device_model == DEVICE_UNDEFINED) {
-            light_blink_start(2, 30, 200);
-        } else {
-            light_blink_start(1, 30, 30);
+        if (!g_appCtx.net_steer_start) {
+            light_blink_stop();
+            if (fault_measure_flag || dev_config.device_model == DEVICE_UNDEFINED) {
+                light_blink_start(2, 30, 200);
+            } else {
+                light_blink_start(1, 30, 30);
+            }
         }
     } else {
-        if (fault_measure_flag || dev_config.device_model == DEVICE_UNDEFINED) {
-            light_blink_start(4, 30, 200);
-        } else {
-            light_blink_start(3, 30, 200);
+        if (!g_appCtx.net_steer_start) {
+            if (fault_measure_flag || dev_config.device_model == DEVICE_UNDEFINED) {
+                light_blink_start(4, 30, 200);
+            } else {
+                light_blink_start(3, 30, 200);
+            }
         }
     }
 

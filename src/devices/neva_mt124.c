@@ -1,7 +1,7 @@
 #include "tl_common.h"
 #include "zcl_include.h"
 
-#include "se_custom_attr.h"
+#include "zcl_custom_attr.h"
 #include "app_uart.h"
 #include "app_endpoint_cfg.h"
 #include "app_dev_config.h"
@@ -854,10 +854,6 @@ static void get_resbat_data() {
 }
 
 static void get_data_6102() {
-    if (new_start) {
-        new_start = false;
-    }
-
     if (serial_number[0] == 0) {
         get_serial_number_data();
     }
@@ -874,10 +870,6 @@ static void get_data_6102() {
 
 
 static void get_data_7109() {
-    if (new_start) {
-        new_start = false;
-    }
-
     if (serial_number[0] == 0) {
         get_serial_number_data();
     }
@@ -916,6 +908,11 @@ uint8_t measure_meter_neva_mt124() {
                     break;
             }
             fault_measure_flag = false;
+
+            if (new_start) {
+                new_start = false;
+                forcedReportCb(NULL);
+            }
         }
         close_session();
     } else {

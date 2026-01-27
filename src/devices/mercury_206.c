@@ -5,7 +5,7 @@
 #include "device.h"
 #include "mercury_206.h"
 #include "app_uart.h"
-#include "se_custom_attr.h"
+#include "zcl_custom_attr.h"
 #include "app_endpoint_cfg.h"
 
 static package_t request_pkt;
@@ -466,13 +466,17 @@ uint8_t measure_meter_mercury_206() {
         if (new_start) {
             get_serial_number_data();
             get_date_release_data();
-            new_start = false;
         }
         get_net_params_data();
         get_tariffs_data();
         get_resbat_data();
 
         fault_measure_flag = false;
+
+        if (new_start) {
+            new_start = false;
+            forcedReportCb(NULL);
+        }
     } else {
         fault_measure_flag = true;
         if (!timerFaultMeasurementEvt) {

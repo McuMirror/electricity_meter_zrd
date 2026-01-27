@@ -5,7 +5,7 @@
 #include "kaskad_11.h"
 #include "app_dev_config.h"
 #include "app_uart.h"
-#include "se_custom_attr.h"
+#include "zcl_custom_attr.h"
 #include "app_main.h"
 
 #define LEVEL_READ 0x02
@@ -563,7 +563,6 @@ uint8_t measure_meter_kaskad_11() {
         if (new_start) {               /* after reset          */
             serial_number[0] = 0;
             date_release[0] = 0;
-            new_start = false;
         }
         if (serial_number[0] == 0) {
             get_serial_number_data();
@@ -586,8 +585,15 @@ uint8_t measure_meter_kaskad_11() {
 
             ret = true;
         }
+
         close_channel();
         fault_measure_flag = false;
+
+        if (new_start) {
+            new_start = false;
+            forcedReportCb(NULL);
+        }
+
     } else {
         fault_measure_flag = true;
         if (!timerFaultMeasurementEvt) {

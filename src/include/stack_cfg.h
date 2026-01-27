@@ -26,11 +26,6 @@
 #pragma once
 
 /**
- *  @brief Definition for timer event
- */
-#define TIMER_EVENT_NUM                         (48)
-
-/**
  *  @brief  Working channel
  *          Valid value: 11 ~ 26
  */

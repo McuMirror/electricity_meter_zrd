@@ -7,7 +7,6 @@
 #include "ota.h"
 #include "gp.h"
 
-#include "se_custom_attr.h"
 #include "app_reporting.h"
 #include "app_uart.h"
 #include "app_endpoint_cfg.h"
@@ -17,6 +16,8 @@
 #include "app_temperature.h"
 #include "app_utility.h"
 #include "app_tamper.h"
+#include "zcl_custom_attr.h"
+
 
 typedef struct{
     uint8_t keyType; /* CERTIFICATION_KEY or MASTER_KEY key for touch-link or distribute network
@@ -27,12 +28,14 @@ typedef struct{
 typedef struct{
     ev_timer_event_t *timerLedEvt;
     ev_timer_event_t *timerLedStatusEvt;
+    ev_timer_event_t *timerFactoryReset;
 //    ev_timer_event_t *timerForcedReportEvt;
     ev_timer_event_t *timerStopReportEvt;
     ev_timer_event_t *timerMeasurementEvt;
     ev_timer_event_t *timerNoJoinedEvt;
 
-    button_t button;
+    button_t button[MAX_BUTTON_NUM];
+    uint8_t  keyPressed;
 
     uint16_t ledOnTime;
     uint16_t ledOffTime;
@@ -41,7 +44,8 @@ typedef struct{
     uint8_t  times;      //blink times
     uint8_t  state;
 
-    bool bdbFindBindFlg;
+    bool net_steer_start;
+//    bool bdbFindBindFlg;
 //    bool lightAttrsChanged;
 
     app_linkKey_info_t tcLinkKey;

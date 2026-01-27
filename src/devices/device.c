@@ -3,7 +3,6 @@
 #include "zcl_include.h"
 
 #include "device.h"
-#include "se_custom_attr.h"
 #include "app_main.h"
 #include "app_uart.h"
 
@@ -24,6 +23,7 @@ uint8_t device_model[DEVICE_MAX][32] = {
     {"ENERGOMERA-CE208BY"},
     {"NEVA-MT124"},
     {"NARTIS-100"},
+    {"NARTIS-I100"},
 };
 
 uint8_t set_device_model(device_model_t model) {
@@ -42,6 +42,7 @@ uint8_t set_device_model(device_model_t model) {
     uint16_t power = 0; //xffff;
     uint16_t volts = 0; //xffff;
     uint16_t current = 0; //xffff;
+    uint8_t battery = 0;
     uint8_t sn[] = "11111111";
     uint8_t serial_number[SE_ATTR_SN_SIZE] = {0};
     uint8_t dr[] = "xx.xx.xxxx";
@@ -122,20 +123,37 @@ uint8_t set_device_model(device_model_t model) {
         case DEVICE_NARTIS_100: {
             /* reset password when changing model */
             dev_config.device_password.size = 0;
-            nartis100_init();
+            nartis_100_init();
             measure_meter = measure_meter_nartis_100;
             baudrate = 9600;
             energy_divisor = 1000;
             voltage_divisor = 100;
             current_divisor = 1000;
-            power_divisor = 1000;
+            power_divisor = 1;
 
             if (set_zcl_str(device_model[DEVICE_NARTIS_100], name, DEVICE_NAME_LEN)) {
                 zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_CUSTOM_DEVICE_MODEL, (uint8_t*)&name);
             }
             break;
         }
+        case DEVICE_NARTIS_I100: {
+            /* reset password when changing model */
+            dev_config.device_password.size = 0;
+            nartis_i100_init();
+            measure_meter = measure_meter_nartis_i100;
+            baudrate = 9600;
+            energy_divisor = 1000;
+            voltage_divisor = 100;
+            current_divisor = 1000;
+            power_divisor = 1;
+
+            if (set_zcl_str(device_model[DEVICE_NARTIS_I100], name, DEVICE_NAME_LEN)) {
+                zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_CUSTOM_DEVICE_MODEL, (uint8_t*)&name);
+            }
+            break;
+        }
         default:
+            model = DEVICE_UNDEFINED;
             if (set_zcl_str(device_model[DEVICE_UNDEFINED], name, DEVICE_NAME_LEN)) {
                 zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_CUSTOM_DEVICE_MODEL, (uint8_t*)&name);
             }
@@ -166,6 +184,7 @@ uint8_t set_device_model(device_model_t model) {
         zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_CUSTOM_DATE_RELEASE, (uint8_t*)&date_release);
     }
 
+    zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_REMAINING_BATTERY_LIFE, (uint8_t*)&battery);
     zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_MULTIPLIER, (uint8_t*)&energy_multiplier);
     zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_SE_METERING, ZCL_ATTRID_DIVISOR, (uint8_t*)&energy_divisor);
     zcl_setAttrVal(APP_ENDPOINT_1, ZCL_CLUSTER_MS_ELECTRICAL_MEASUREMENT, ZCL_ATTRID_AC_VOLTAGE_MULTIPLIER, (uint8_t*)&voltage_multiplier);

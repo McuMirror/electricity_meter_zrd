@@ -1,89 +1,128 @@
+#include "tl_common.h"
+#include "zcl_include.h"
+
 #include "app_main.h"
 
-#define DEBOUNCE_BUTTON     16                          /* number of polls for debounce       */
-#define COUNT_FACTORY_RESET 5                           /* number of clicks for factory reset */
+static int32_t net_steer_start_offCb(void *args) {
 
-void init_button() {
+    g_appCtx.net_steer_start = false;
 
-    memset(&g_appCtx.button, 0, sizeof(button_t));
+    light_blink_stop();
 
-    g_appCtx.button.debounce = 1;
-    g_appCtx.button.released_time = clock_time();
-
+    return -1;
 }
 
-void button_handler() {
+//static int32_t factory_resetCb(void *args) {
+//
+//    g_appCtx.net_steer_start = true;
+//    TL_ZB_TIMER_SCHEDULE(net_steer_start_offCb, NULL, TIMEOUT_1MIN30SEC);
+//    led_effect_start(55, COLOR_RED);
+//
+//    return -1;
+//}
 
-    if (!drv_gpio_read(BUTTON)) {
-        if (g_appCtx.button.debounce != DEBOUNCE_BUTTON) {
-            g_appCtx.button.debounce++;
-            if (g_appCtx.button.debounce == DEBOUNCE_BUTTON) {
-                g_appCtx.button.pressed = true;
-                g_appCtx.button.pressed_time = clock_time();
-                if (!clock_time_exceed(g_appCtx.button.released_time, TIMEOUT_TICK_1SEC)) {
-                    g_appCtx.button.counter++;
-                } else {
-                    g_appCtx.button.counter = 1;
-                }
+
+static void buttonKeepPressed(uint8_t btNum) {
+    g_appCtx.button[btNum-1].state = APP_FACTORY_NEW_DOING;
+    g_appCtx.button[btNum-1].ctn = 0;
+
+    if(btNum == VK_SW1) {
+#if UART_PRINTF_MODE && DEBUG_BUTTON
+        printf("The button was keep pressed for 5 seconds\r\n");
+#endif
+
+
+        zb_factoryReset();
+
+        g_appCtx.net_steer_start = true;
+        TL_ZB_TIMER_SCHEDULE(net_steer_start_offCb, NULL, TIMEOUT_1MIN30SEC);
+        light_blink_start(90, 100, 1000);
+
+    }
+}
+
+static void buttonCheckCommand(uint8_t btNum) {
+    g_appCtx.button[btNum-1].state = APP_STATE_NORMAL;
+
+    if (g_appCtx.button[btNum-1].ctn == 1) {
+#if UART_PRINTF_MODE && DEBUG_BUTTON
+        printf("Button push 1 time\r\n");
+#endif
+        TL_ZB_TIMER_SCHEDULE(forcedReportCb, NULL, TIMEOUT_100MS);
+     } else if (g_appCtx.button[btNum-1].ctn == 3) {
+#if UART_PRINTF_MODE && DEBUG_BUTTON
+        printf("Button push 3 time\r\n");
+#endif
+        TL_ZB_TIMER_SCHEDULE(delayedMcuResetCb, NULL, TIMEOUT_100MS);
+     }
+
+    g_appCtx.button[btNum-1].ctn = 0;
+}
+
+
+void keyScan_keyPressedCB(kb_data_t *kbEvt) {
+
+    uint8_t keyCode = kbEvt->keycode[0];
+
+    if(keyCode != 0xff) {
+        g_appCtx.button[keyCode-1].pressed_time = clock_time();
+        g_appCtx.button[keyCode-1].state = APP_FACTORY_NEW_SET_CHECK;
+        g_appCtx.button[keyCode-1].ctn++;
+        light_blink_start(1, 30, 1);
+    }
+}
+
+
+void keyScan_keyReleasedCB(uint8_t keyCode) {
+
+    if (keyCode != 0xff) {
+        g_appCtx.button[keyCode-1].released_time = clock_time();
+        g_appCtx.button[keyCode-1].state = APP_STATE_RELEASE;
+    }
+}
+
+void button_handler(void) {
+    static uint8_t valid_keyCode = 0xff;
+
+    for (uint8_t i = 0; i < MAX_BUTTON_NUM; i++) {
+        if (g_appCtx.button[i].state == APP_FACTORY_NEW_SET_CHECK) {
+            if(clock_time_exceed(g_appCtx.button[i].pressed_time, TIMEOUT_TICK_5SEC)) {
+                buttonKeepPressed(i+1);
             }
         }
-    } else {
-        if (g_appCtx.button.debounce != 1) {
-            g_appCtx.button.debounce--;
-            if (g_appCtx.button.debounce == 1 && g_appCtx.button.pressed) {
-                g_appCtx.button.released = true;
-                g_appCtx.button.released_time = clock_time();
+
+        if (g_appCtx.button[i].state == APP_STATE_RELEASE) {
+            if(clock_time_exceed(g_appCtx.button[i].released_time, TIMEOUT_TICK_250MS)) {
+                buttonCheckCommand(i+1);
             }
+
         }
     }
 
-    if (g_appCtx.button.pressed && g_appCtx.button.released) {
-        g_appCtx.button.pressed = g_appCtx.button.released = false;
-        if (clock_time_exceed(g_appCtx.button.pressed_time, TIMEOUT_TICK_10SEC)) {
-            /* long pressed > 10 sec. */
-            /* TODO: full clean (factory reset and clean config) */
-            light_blink_start(3, 30, 250);
-#if UART_PRINTF_MODE
-            printf("Full reset of the device!\r\n");
-#endif
-            TL_ZB_TIMER_SCHEDULE(delayedFullResetCb, NULL, TIMEOUT_1SEC);
-        } else if (clock_time_exceed(g_appCtx.button.pressed_time, TIMEOUT_TICK_5SEC)) {
-            /* long pressed > 5 sec. */
-            light_blink_start(3, 30, 250);
-#if UART_PRINTF_MODE
-            printf("MCU reset!\r\n");
-#endif
-            TL_ZB_TIMER_SCHEDULE(delayedMcuResetCb, NULL, TIMEOUT_1SEC);
-        } else { /* short pressed < 5 sec. */
-            light_blink_start(1, 30, 30);
-
-            app_all_forceReporting();
-            // for test
-            //app_forcedReport(APP_ENDPOINT_1, ZCL_CLUSTER_GEN_DEVICE_TEMP_CONFIG, ZCL_ATTRID_DEV_TEMP_CURR_TEMP);
-        }
-    } else if (!g_appCtx.button.pressed) {
-        if (clock_time_exceed(g_appCtx.button.released_time, TIMEOUT_TICK_1SEC)) {
-            if (g_appCtx.button.counter == COUNT_FACTORY_RESET) {
-                light_blink_start(3, 30, 250);
-                g_appCtx.button.counter = 0;
-#if UART_PRINTF_MODE
-                printf("Factory reset!\r\n");
-#endif
-                TL_ZB_TIMER_SCHEDULE(delayedFactoryResetCb, NULL, TIMEOUT_1SEC);
-            } else {
-                g_appCtx.button.counter = 0;
+    if(kb_scan_key(0, 1)){
+        if(kb_event.cnt){
+            g_appCtx.keyPressed = 1;
+            keyScan_keyPressedCB(&kb_event);
+            if(kb_event.cnt == 1){
+                valid_keyCode = kb_event.keycode[0];
             }
+        }else{
+            keyScan_keyReleasedCB(valid_keyCode);
+            valid_keyCode = 0xff;
+            g_appCtx.keyPressed = 0;
         }
-
     }
 }
 
 uint8_t button_idle() {
-    if ((g_appCtx.button.debounce != 1 && g_appCtx.button.debounce != DEBOUNCE_BUTTON)
-            || g_appCtx.button.pressed
-            || g_appCtx.button.counter) {
+
+    if (g_appCtx.keyPressed) {
         return true;
     }
+
+    for (uint8_t i = 0; i < MAX_BUTTON_NUM; i++) {
+        if (g_appCtx.button[i].ctn) return true;
+    }
+
     return false;
 }
-

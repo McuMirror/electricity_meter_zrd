@@ -1,7 +1,7 @@
 #include "tl_common.h"
 #include "zcl_include.h"
 
-#include "se_custom_attr.h"
+#include "zcl_custom_attr.h"
 #include "app_uart.h"
 #include "app_endpoint_cfg.h"
 #include "app_dev_config.h"
@@ -655,7 +655,6 @@ uint8_t measure_meter_energomera_ce102m() {
             if (new_start) {
                 get_serial_number_data();
                 get_date_release_data();
-                new_start = false;
             }
             get_tariffs_data();
             get_power_data();
@@ -663,6 +662,11 @@ uint8_t measure_meter_energomera_ce102m() {
             get_amps_data();
 
             fault_measure_flag = false;
+
+            if (new_start) {
+                new_start = false;
+                forcedReportCb(NULL);
+            }
         } else {
             fault_measure_flag = true;
             if (!timerFaultMeasurementEvt) {

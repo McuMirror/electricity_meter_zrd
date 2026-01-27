@@ -27,21 +27,8 @@
 
 #include "../common/comm_cfg.h"
 
-#if (CHIP_FLASH_SIZE == 512)
-#include "version_cfg_512k.h"
-#elif (CHIP_FLASH_SIZE == 1024)
-#include "version_cfg_1m.h"
-#else
-#error CHIP_TYPE must be TLSR_8258_512K or TLSR_8258_1M
-#endif
-
-/* APP_RELEASE to version_cfg_512k.h - 0x20 or version_cfg_1m.h - 0x30
- *
- * //#define APP_RELEASE                         0x20        //app release 2.0
- *
- */
-
-#define APP_BUILD                           0x04        //app build 01, full version - v2.0.01
+#define APP_RELEASE                         0x30        //app release 3.0
+#define APP_BUILD                           0x06        //app build 06, full version - v3.0.06
 #define STACK_RELEASE                       0x30        //stack release 3.0
 #define STACK_BUILD                         0x01        //stack build 01
 #define HW_VERSION                          0x01
@@ -86,6 +73,14 @@
  * 0x11 - Tuya Thermostat
  * 0x12 - ECM_DIN1_counter
  * 0x13 - Tuya CO2 Sensor
+ * 0x14 - Air monitor
+ * 0x15 - Tuya Temperature and Humidity sensors ts0201_tz3000
+ * 0x16 - Tuya Temperature and Humidity sensors ts0601_tze200 ZG-227Z
+ * 0x17 - Tuya water leak sensor ZG-222ZA, ZTU or tlsr825x with 1M
+ * 0x18 - Tuya water leak sensor ZG-222ZA, tlsr825x with 512K
+ * 0x19 - Tuya water leak sensor SNZB-05, tlsr8656 with 512K
+ * 0x1A - ElectricityMeter_ABC
+ *
  */
 
 #define IMAGE_TYPE_APP          (0x07 | (IMAGE_TYPE_BOOT_FLAG << 7))

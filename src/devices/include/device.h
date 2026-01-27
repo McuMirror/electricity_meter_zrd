@@ -2,6 +2,7 @@
 #define SRC_INCLUDE_DEVICE_H_
 
 #include "app_utility.h"
+#include "app_reporting.h"
 
 #define PKT_BUFF_MAX_LEN    128         /* max len read from uart   */
 #define DATA_MAX_LEN        30          /* do not change!           */
@@ -24,6 +25,7 @@ typedef enum {
     DEVICE_ENERGOMERA_CE208BY,
     DEVICE_NEVA_MT124,
     DEVICE_NARTIS_100,
+    DEVICE_NARTIS_I100,
     DEVICE_MAX,
 } device_model_t;
 
@@ -67,7 +69,9 @@ uint8_t measure_meter_mercury_206();
 uint8_t measure_meter_energomera_ce102m();
 uint8_t measure_meter_energomera_ce208by();
 uint8_t measure_meter_neva_mt124();
-void nartis100_init();
+void nartis_100_init();
+void nartis_i100_init();
 uint8_t measure_meter_nartis_100();
+uint8_t measure_meter_nartis_i100();
 
 #endif /* SRC_INCLUDE_DEVICE_H_ */

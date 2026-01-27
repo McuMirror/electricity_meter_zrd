@@ -27,32 +27,6 @@
 
 #include "../common/comm_cfg.h"
 
-#if defined(MCU_CORE_826x)
-	#if (CHIP_8269)
-		#define CHIP_TYPE					TLSR_8269
-	#else
-		#define CHIP_TYPE					TLSR_8267
-	#endif
-#elif defined(MCU_CORE_8258)
-#if (CHIP_FLASH_SIZE == 512)
-		#define CHIP_TYPE					TLSR_8258_512K//TLSR_8258_1M
-#elif (CHIP_FLASH_SIZE == 1024)
-        #define CHIP_TYPE                   TLSR_8258_1M//TLSR_8258_512K//
-#else
-    #error FLASH_SIZE must be 512 or 1024
-#endif
-//#if (CHIP_TYPE == TLSR_8258_512K)
-//#error TLSR_8258_512K
-//#endif
-//#if (CHIP_TYPE == TLSR_8258_1M)
-//#error TLSR_8258_1M
-//#endif
-#elif defined(MCU_CORE_8278)
-		#define CHIP_TYPE					TLSR_8278
-#elif defined(MCU_CORE_B91)
-		#define CHIP_TYPE					TLSR_B91
-#endif
-
 #define APP_RELEASE							0x10//app release 1.0
 #define APP_BUILD							0x01//app build 01
 #define STACK_RELEASE						0x30//stack release 3.0
